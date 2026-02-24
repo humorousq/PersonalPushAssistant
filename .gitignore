@@ -1,2 +1,4 @@
 .cursor/
 config/config.yaml
+__pycache__/
+*.pyc
