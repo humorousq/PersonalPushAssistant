@@ -1,0 +1,29 @@
+name: daily-push
+
+on:
+  schedule:
+    # Run every 15 minutes (UTC); runner decides which schedules to run by cron
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Prepare config
+        run: cp config/config.example.yaml config/config.yaml
+
+      - name: Run push assistant
+        env:
+          PUSHPLUS_TOKEN_ME: ${{ secrets.PUSHPLUS_TOKEN_ME }}
+        run: python -m src.cli run
