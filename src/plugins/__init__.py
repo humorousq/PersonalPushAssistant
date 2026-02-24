@@ -1,10 +1,12 @@
-# Plugin registry; Stage 4 will register stocks.daily-brief
+# Plugin registry
 from __future__ import annotations
 
 from src.plugins.placeholder import PlaceholderPlugin
+from src.plugins.stocks_daily import StocksDailyBriefPlugin
 
 PLUGINS: dict[str, type] = {
     "placeholder": PlaceholderPlugin,
+    "stocks.daily-brief": StocksDailyBriefPlugin,
 }
 
 

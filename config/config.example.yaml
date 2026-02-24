@@ -14,17 +14,16 @@ schedules:
       - recipient_id: me
         plugin_id: placeholder
         config_ref: placeholder-me
-  # After stocks.daily-brief is added, uncomment:
-  # - id: morning_8
-  #   cron: "0 0 * * *"
-  #   jobs:
-  #     - recipient_id: me
-  #       plugin_id: stocks.daily-brief
-  #       config_ref: stocks-me
+  - id: morning_8
+    cron: "0 0 * * *"
+    jobs:
+      - recipient_id: me
+        plugin_id: stocks.daily-brief
+        config_ref: stocks-me
 
 plugin_configs:
   placeholder-me: {}
-  # stocks-me:
-  #   symbols: ["600519.SH", "000858.SZ"]
-  #   with_news: true
-  #   news_per_symbol: 3
+  stocks-me:
+    symbols: ["600519.SH", "000858.SZ"]
+    with_news: true
+    news_per_symbol: 3
