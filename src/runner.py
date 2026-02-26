@@ -108,6 +108,10 @@ def run(config_path: str | Path, schedule_id: str | None = None) -> None:
 
     now = datetime.now(timezone.utc)
     schedules = schedules_to_run(config, now, schedule_id)
+    if not schedules:
+        logger.info("No schedules to run (current time does not match any cron). Use --schedule <id> to run a schedule anyway.")
+        return
+    logger.info("Running %s schedule(s): %s", len(schedules), [s.get("id") for s in schedules])
 
     for sch in schedules:
         sid = sch.get("id", "?")

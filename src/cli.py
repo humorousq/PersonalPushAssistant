@@ -4,10 +4,28 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 from src.runner import run
 
 DEFAULT_CONFIG = "config/config.yaml"
+LOG_DIR = Path("logs")
+
+
+def _setup_logging() -> None:
+    LOG_DIR.mkdir(exist_ok=True)
+    log_file = LOG_DIR / "app.log"
+    fmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
+    formatter = logging.Formatter(fmt)
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    if not root.handlers:
+        h_stderr = logging.StreamHandler(sys.stderr)
+        h_stderr.setFormatter(formatter)
+        root.addHandler(h_stderr)
+        h_file = logging.FileHandler(log_file, encoding="utf-8")
+        h_file.setFormatter(formatter)
+        root.addHandler(h_file)
 
 
 def main() -> None:
@@ -26,11 +44,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-        stream=sys.stderr,
-    )
+    _setup_logging()
 
     if args.command == "run":
         try:
