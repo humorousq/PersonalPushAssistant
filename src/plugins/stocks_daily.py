@@ -129,7 +129,11 @@ def _fetch_quotes(symbols: list[str]) -> list[_Quote]:
 
 
 def _fetch_news(keyword: str, limit: int) -> list[tuple[str, str]]:
-    """Return list of (title, url) for keyword, at most limit items."""
+    """Return list of (title, url) for keyword, at most limit items.
+
+    当前实现仅作为可选增强，默认关闭（with_news=false）。
+    尝试过滤掉明显的广告和推广链接，但仍不保证强相关性。
+    """
     if limit <= 0:
         return []
     try:
@@ -138,17 +142,27 @@ def _fetch_news(keyword: str, limit: int) -> list[tuple[str, str]]:
         soup = BeautifulSoup(resp.text, "html.parser")
         items: list[tuple[str, str]] = []
         # Common structure: news list items with title link
-        for a in soup.select("div.news_item_t a, .newslist a, a[href*='eastmoney.com']")[: limit * 2]:
+        for a in soup.select("div.news_item_t a, .newslist a, a[href*='eastmoney.com']")[: limit * 5]:
             href = a.get("href") or ""
             if "eastmoney.com" not in href and not href.startswith("http"):
                 continue
             if not href.startswith("http"):
                 href = "https://so.eastmoney.com" + href if href.startswith("/") else "https://" + href
             title = (a.get_text() or "").strip()
-            if title and len(title) > 2:
-                items.append((title[:80], href))
-                if len(items) >= limit:
-                    break
+            if not title or len(title) <= 4:
+                continue
+            # 过滤明显广告 / 推广链接
+            lower_title = title.lower()
+            if "东方财富" in title or "level-2" in lower_title or "免费版" in title:
+                continue
+            if "acttg.eastmoney.com" in href:
+                continue
+            # 要求包含至少一个中文字符，看起来更像新闻
+            if not re.search(r"[\u4e00-\u9fff]", title):
+                continue
+            items.append((title[:80], href))
+            if len(items) >= limit:
+                break
         return items[:limit]
     except Exception as e:
         logger.warning("News fetch failed for %s: %s", keyword, e)

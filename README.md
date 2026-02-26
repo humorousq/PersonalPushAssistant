@@ -100,7 +100,7 @@ python -m src.cli run --schedule stocks_1024 --dry-run
 ## 插件说明
 
 - **placeholder**：占位插件，返回一条固定文本，用于验证 Runner 与通道。
-- **stocks.daily-brief**：股票早报。配置 `symbols`（如 `["600519.SH", "000858.SZ"]`）、`with_news`、`news_per_symbol`。行情来自新浪，新闻来自东方财富搜索。
+- **stocks.daily-brief**：股票早报。配置 `symbols`（如 `["600519.SH", "000858.SZ"]`）、可选的 `symbol_names`（代码到展示名的映射）、`with_news`、`news_per_symbol`。行情来自新浪（A 股 + 港股，港股默认只按代码展示），新闻来自东方财富搜索；**新闻默认关闭（with_news=false）且仅作参考，不保证强相关性。**
 
 ## 扩展
 

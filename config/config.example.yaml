@@ -25,5 +25,5 @@ plugin_configs:
   placeholder-me: {}
   stocks-me:
     symbols: ["600519.SH", "000858.SZ"]
-    with_news: true
+    with_news: false  # 默认关闭新闻，避免噪音；需要时可打开
     news_per_symbol: 3
