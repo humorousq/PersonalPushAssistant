@@ -186,8 +186,12 @@ class StocksDailyBriefPlugin:
                 lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
             else:
                 sign = "+" if q.change_pct >= 0 else ""
+                label = q.symbol
+                # 港股名称编码质量较差，这里只展示代码，避免乱码；A 股则附加名称
+                if not q.symbol.strip().upper().endswith(".HK") and q.name:
+                    label = f"{label} {q.name}"
                 lines.append(
-                    f"- {q.symbol} {q.name}：现价 {q.current:.2f}（{sign}{q.change_pct:.2f}%），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
+                    f"- {label}：现价 {q.current:.2f}（{sign}{q.change_pct:.2f}%），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
                 )
 
         if with_news and news_per_symbol > 0:
