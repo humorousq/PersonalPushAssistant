@@ -200,21 +200,13 @@ class StocksDailyBriefPlugin:
 
         quotes = _fetch_quotes(symbols)
 
-        # 表头
-        lines.append(
-            "| 代码 | 名称 | 现价 | 涨跌幅 | 涨跌额 | 昨收 | 今开 |"
-        )
-        lines.append(
-            "|------|------|-----:|-------:|-------:|-----:|-----:|"
-        )
-
-        # 成功的报价行
         for q in quotes:
             if q.failed:
+                lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
                 continue
 
             code = q.symbol
-            # 名称：优先 symbol_names，其次接口返回名称（仅 A 股）
+            # 名称：优先 symbol_names，其次接口返回名称（仅 A 股；港股默认不信任接口名）
             custom_name = symbol_names.get(code)
             if custom_name:
                 name = custom_name
@@ -240,17 +232,16 @@ class StocksDailyBriefPlugin:
             change_abs_sign = "+" if change_abs >= 0 else ""
             change_abs_str = f"{change_abs_sign}{change_abs:.2f}"
 
+            # 手机友好：每只股票一块，多行展示
+            title_name = f" {name}" if name else ""
+            lines.append(f"**{code}{title_name}**")
             lines.append(
-                f"| {code} | {name or '-'} | {q.current:.2f} | {change_str} | {change_abs_str} | {q.prev_close:.2f} | {q.open_today:.2f} |"
+                f"- 现价：{q.current:.2f}（{change_str} / {change_abs_str}）"
             )
-
-        # 失败的报价单独列出
-        failed_quotes = [q for q in quotes if q.failed]
-        if failed_quotes:
+            lines.append(
+                f"- 昨收 / 今开：{q.prev_close:.2f} / {q.open_today:.2f}"
+            )
             lines.append("")
-            lines.append("获取失败：")
-            for q in failed_quotes:
-                lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
 
         if with_news and news_per_symbol > 0:
             lines.append("")
