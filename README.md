@@ -2,6 +2,43 @@
 
 按时间调度执行内容插件，并通过 PushPlus 推送到指定接收人。支持多接收人、多调度计划、多插件；本期实现 PushPlus 通道与股票早报插件。
 
+---
+
+## 快速开始（本地跑通一条推送）
+
+按下面几步即可在本地发出一条 PushPlus 推送，用于验证 token 和流程。
+
+1. **克隆并进入项目**
+   ```bash
+   git clone <本仓库地址>
+   cd PersonalPushAssistant
+   ```
+
+2. **安装依赖**（建议先建虚拟环境：`python3 -m venv .venv` 再 `source .venv/bin/activate`）
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **准备配置文件**
+   ```bash
+   cp config/config.example.yaml config/config.yaml
+   ```
+   无需改 `config.yaml`，默认已用环境变量 `PUSHPLUS_TOKEN_ME` 作为 token。
+
+4. **设置 PushPlus Token 并执行**
+   - 将下面的 `你的PushPlus的token` 换成你在 [PushPlus](https://www.pushplus.plus/) 获取的 token。
+   ```bash
+   export PUSHPLUS_TOKEN_ME=你的PushPlus的token
+   python -m src.cli run --schedule test
+   ```
+
+5. **预期结果**  
+   终端无报错，且你的 PushPlus 会收到一条「占位」测试消息，即表示本地流程已跑通。
+
+> 提示：不想每次输入 token，可复制 `.env.example` 为 `.env`，把里面的 token 填好；在终端执行 `source .env`（仅 Linux/macOS）后再运行上面的 `python -m src.cli run --schedule test`。
+
+---
+
 ## 环境要求
 
 - Python 3.10+
@@ -35,8 +72,8 @@ python -m src.cli run
 # 指定配置文件
 python -m src.cli run --config config/config.yaml
 
-# 仅执行指定 schedule（不按时间判断）
-python -m src.cli run --schedule morning_8
+# 仅执行指定 schedule（不按时间判断），例如本地测试
+python -m src.cli run --schedule test
 ```
 
 ## GitHub Actions
