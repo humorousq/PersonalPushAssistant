@@ -166,6 +166,10 @@ class StocksDailyBriefPlugin:
         if not symbols or not isinstance(symbols, (list, tuple)):
             raise ValueError("plugin_config must have 'symbols' (list)")
         symbols = [str(s).strip() for s in symbols if s]
+        raw_symbol_names = cfg.get("symbol_names") or {}
+        symbol_names: dict[str, str] = (
+            dict(raw_symbol_names) if isinstance(raw_symbol_names, dict) else {}
+        )
         with_news = cfg.get("with_news", False)
         if not isinstance(with_news, bool):
             with_news = bool(with_news)
@@ -187,9 +191,14 @@ class StocksDailyBriefPlugin:
             else:
                 sign = "+" if q.change_pct >= 0 else ""
                 label = q.symbol
-                # 港股名称编码质量较差，这里只展示代码，避免乱码；A 股则附加名称
-                if not q.symbol.strip().upper().endswith(".HK") and q.name:
-                    label = f"{label} {q.name}"
+                # 1) 若配置了自定义名称，则优先使用，例如 1024.HK -> 快手-W
+                custom_name = symbol_names.get(q.symbol)
+                if custom_name:
+                    label = f"{label} {custom_name}"
+                else:
+                    # 2) 否则：A 股附加接口返回的名称，港股仅展示代码，避免乱码
+                    if not q.symbol.strip().upper().endswith(".HK") and q.name:
+                        label = f"{label} {q.name}"
                 lines.append(
                     f"- {label}：现价 {q.current:.2f}（{sign}{q.change_pct:.2f}%），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
                 )
@@ -201,7 +210,12 @@ class StocksDailyBriefPlugin:
                 if q.failed or not q.name:
                     continue
                 lines.append("")
-                lines.append(f"### {q.symbol} {q.name}")
+                news_name = symbol_names.get(q.symbol) or q.name
+                # 港股未配置自定义名称时，直接用代码作标题，避免乱码
+                if q.symbol.strip().upper().endswith(".HK") and q.symbol not in symbol_names:
+                    lines.append(f"### {q.symbol}")
+                else:
+                    lines.append(f"### {q.symbol} {news_name}")
                 news_list = _fetch_news(q.name, news_per_symbol)
                 if not news_list:
                     lines.append("暂无相关新闻。")
