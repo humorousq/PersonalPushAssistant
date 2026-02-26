@@ -35,6 +35,11 @@ class PushPlusChannel:
             logger.error("PushPlus channel_config missing 'token'")
             return
         token = _resolve_token(token)
+        if not token:
+            logger.error("PushPlus token is empty (env var not set or empty). Check .env and run after source .env")
+            return
+        mask = f"{token[:4]}***" if len(token) > 4 else "***"
+        logger.info("PushPlus token: length=%s prefix=%s (check .env matches)", len(token), mask)
         title = msg.title
         content = msg.body
         template = "markdown" if msg.format == "markdown" else "txt"
