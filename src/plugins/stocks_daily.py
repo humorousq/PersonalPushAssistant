@@ -20,14 +20,30 @@ EASTMONEY_NEWS_URL = "https://so.eastmoney.com/news/s"
 
 
 def _symbol_to_sina(symbol: str) -> str:
-    """600519.SH -> sh600519, 000858.SZ -> sz000858."""
+    """Map user symbol to Sina code.
+
+    Examples:
+    - 600519.SH -> sh600519
+    - 000858.SZ -> sz000858
+    - 1024.HK   -> hk01024
+    """
     s = symbol.strip().upper()
+    if not s:
+        return ""
     if s.endswith(".SH"):
         return "sh" + s[:-3]
     if s.endswith(".SZ"):
         return "sz" + s[:-3]
+    if s.endswith(".HK"):
+        base = s[:-3]
+        digits = "".join(ch for ch in base if ch.isdigit())
+        if not digits:
+            return ""
+        # Sina uses 5-digit Hong Kong codes with leading zeros, e.g. hk01024
+        return "hk" + digits.zfill(5)
     if s.startswith("6"):
         return "sh" + s
+    # Default: treat as SZ A-share style
     return "sz" + s
 
 
