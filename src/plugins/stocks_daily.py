@@ -199,34 +199,58 @@ class StocksDailyBriefPlugin:
         lines: list[str] = ["# 今日股票简报（" + date_str + "）", "", "## 股票概览", ""]
 
         quotes = _fetch_quotes(symbols)
+
+        # 表头
+        lines.append(
+            "| 代码 | 名称 | 现价 | 涨跌幅 | 涨跌额 | 昨收 | 今开 |"
+        )
+        lines.append(
+            "|------|------|-----:|-------:|-------:|-----:|-----:|"
+        )
+
+        # 成功的报价行
         for q in quotes:
             if q.failed:
-                lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
+                continue
+
+            code = q.symbol
+            # 名称：优先 symbol_names，其次接口返回名称（仅 A 股）
+            custom_name = symbol_names.get(code)
+            if custom_name:
+                name = custom_name
             else:
-                sign = "+" if q.change_pct >= 0 else ""
-                label = q.symbol
-                # 1) 若配置了自定义名称，则优先使用，例如 1024.HK -> 快手-W
-                custom_name = symbol_names.get(q.symbol)
-                if custom_name:
-                    label = f"{label} {custom_name}"
+                if not code.strip().upper().endswith(".HK"):
+                    name = q.name
                 else:
-                    # 2) 否则：A 股附加接口返回的名称，港股仅展示代码，避免乱码
-                    if not q.symbol.strip().upper().endswith(".HK") and q.name:
-                        label = f"{label} {q.name}"
+                    name = ""
 
-                # 涨跌幅带颜色（PushPlus markdown 支持部分 HTML）：
-                # 涨：红色；跌：绿色；平：默认颜色。
-                change_raw = f"{sign}{q.change_pct:.2f}%"
-                if q.change_pct > 0:
-                    change_str = f'<font color="red">{change_raw}</font>'
-                elif q.change_pct < 0:
-                    change_str = f'<font color="green">{change_raw}</font>'
-                else:
-                    change_str = change_raw
+            sign = "+" if q.change_pct >= 0 else ""
 
-                lines.append(
-                    f"- {label}：现价 {q.current:.2f}（{change_str}），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
-                )
+            # 涨跌幅带颜色（PushPlus markdown 支持部分 HTML）
+            change_raw = f"{sign}{q.change_pct:.2f}%"
+            if q.change_pct > 0:
+                change_str = f'<font color="red">{change_raw}</font>'
+            elif q.change_pct < 0:
+                change_str = f'<font color="green">{change_raw}</font>'
+            else:
+                change_str = change_raw
+
+            # 涨跌额（现价 - 昨收）
+            change_abs = q.current - q.prev_close
+            change_abs_sign = "+" if change_abs >= 0 else ""
+            change_abs_str = f"{change_abs_sign}{change_abs:.2f}"
+
+            lines.append(
+                f"| {code} | {name or '-'} | {q.current:.2f} | {change_str} | {change_abs_str} | {q.prev_close:.2f} | {q.open_today:.2f} |"
+            )
+
+        # 失败的报价单独列出
+        failed_quotes = [q for q in quotes if q.failed]
+        if failed_quotes:
+            lines.append("")
+            lines.append("获取失败：")
+            for q in failed_quotes:
+                lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
 
         if with_news and news_per_symbol > 0:
             lines.append("")
