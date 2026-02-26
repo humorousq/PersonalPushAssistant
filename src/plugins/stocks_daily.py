@@ -201,17 +201,33 @@ class StocksDailyBriefPlugin:
         # HTML 容器
         blocks: list[str] = []
         blocks.append(
-            f"<h2 style=\"margin:0 0 12px;\">今日股票简报（{date_str}）</h2>"
+            f"<h2 style=\"margin:0 0 8px;font-size:15px;font-weight:600;\">"
+            f"今日股票简报（{date_str}）"
+            f"</h2>"
         )
 
-        # 每只股票一个卡片
+        # 主体表格（适配手机，信息紧凑）
+        blocks.append(
+            "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
+            "<thead>"
+            "<tr>"
+            "<th style=\"text-align:left;padding:4px 6px;\">代码</th>"
+            "<th style=\"text-align:left;padding:4px 6px;\">名称</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">现价</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">涨跌幅</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">涨跌额</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">昨收</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">今开</th>"
+            "</tr>"
+            "</thead>"
+            "<tbody>"
+        )
+
+        failed_quotes: list[_Quote] = []
+
         for q in quotes:
             if q.failed:
-                blocks.append(
-                    f"<div style=\"margin-bottom:8px;color:#e53935;\">"
-                    f"{q.symbol}：获取失败（{q.error_msg}）"
-                    f"</div>"
-                )
+                failed_quotes.append(q)
                 continue
 
             code = q.symbol
@@ -241,15 +257,31 @@ class StocksDailyBriefPlugin:
             change_abs_sign = "+" if change_abs >= 0 else ""
             change_abs_str = f"{change_abs_sign}{change_abs:.2f}"
 
-            title_name = f" {name}" if name else ""
             blocks.append(
-                "<div style=\"margin-bottom:12px;\">"
-                f"<div style=\"font-weight:600;margin-bottom:4px;\">{code}{title_name}</div>"
-                f"<div>现价：<span style=\"font-weight:600;\">{q.current:.2f}</span>"
-                f"（{change_str} / {change_abs_str}）</div>"
-                f"<div>昨收 / 今开：{q.prev_close:.2f} / {q.open_today:.2f}</div>"
-                "</div>"
+                "<tr>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{code}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{name or '-'}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.current:.2f}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_str}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_abs_str}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.prev_close:.2f}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.open_today:.2f}</td>"
+                "</tr>"
             )
+
+        blocks.append("</tbody></table>")
+
+        # 获取失败的股票单独列出
+        if failed_quotes:
+            blocks.append(
+                "<div style=\"margin-top:8px;color:#e53935;\">获取失败：</div>"
+            )
+            for q in failed_quotes:
+                blocks.append(
+                    f"<div style=\"margin-bottom:4px;color:#e53935;\">"
+                    f"{q.symbol}：获取失败（{q.error_msg}）"
+                    f"</div>"
+                )
 
         # 可选新闻（默认关闭）
         if with_news and news_per_symbol > 0:
