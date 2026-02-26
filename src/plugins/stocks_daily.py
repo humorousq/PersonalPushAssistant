@@ -211,13 +211,10 @@ class StocksDailyBriefPlugin:
             "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
             "<thead>"
             "<tr>"
-            "<th style=\"text-align:left;padding:4px 6px;\">代码</th>"
             "<th style=\"text-align:left;padding:4px 6px;\">名称</th>"
             "<th style=\"text-align:right;padding:4px 6px;\">现价</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">涨跌幅</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">涨跌额</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">昨收</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">今开</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">涨跌</th>"
+            "<th style=\"text-align:right;padding:4px 6px;\">昨/今</th>"
             "</tr>"
             "</thead>"
             "<tbody>"
@@ -259,13 +256,10 @@ class StocksDailyBriefPlugin:
 
             blocks.append(
                 "<tr>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{code}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{name or '-'}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{name or code}</td>"
                 f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.current:.2f}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_str}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_abs_str}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.prev_close:.2f}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.open_today:.2f}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_str} / {change_abs_str}</td>"
+                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{q.prev_close:.2f} / {q.open_today:.2f}</td>"
                 "</tr>"
             )
 
