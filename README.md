@@ -26,23 +26,27 @@
    无需改 `config.yaml`，默认已用环境变量 `PUSHPLUS_TOKEN_ME` 作为 token。
 
 4. **设置 PushPlus Token 并执行**
-   - 将下面的 `你的PushPlus的token` 换成你在 [PushPlus](https://www.pushplus.plus/) 获取的 token。
    ```bash
-   export PUSHPLUS_TOKEN_ME=你的PushPlus的token
+   cp .env.example .env
+   ```
+   编辑 `.env`，把 `your_pushplus_token_here` 换成你的 PushPlus token。然后：
+   ```bash
+   source .env
    python -m src.cli run --schedule test
    ```
 
 5. **预期结果**  
    终端无报错，且你的 PushPlus 会收到一条「占位」测试消息，即表示本地流程已跑通。
 
-> 提示：不想每次输入 token，可复制 `.env.example` 为 `.env`，把里面的 token 填好；在终端执行 `source .env`（仅 Linux/macOS）后再运行上面的 `python -m src.cli run --schedule test`。
-
 ### PUSHPLUS_TOKEN_ME 在哪里设置？
 
-`PUSHPLUS_TOKEN_ME` 是**环境变量**，需要在运行命令的终端里能被读到。两种常用方式：
+`PUSHPLUS_TOKEN_ME` 是环境变量，用 `.env` 设置即可：
 
-- **方式一（临时）**：在当前终端执行 `export PUSHPLUS_TOKEN_ME=你的token`，再运行 `python -m src.cli run ...`。关闭终端后失效。
-- **方式二（持久）**：复制 `.env.example` 为 `.env`，在 `.env` 里把 token 填好；每次运行前在该终端执行 `source .env`（仅 Linux/macOS），再运行推送命令。本仓库不会自动加载 `.env`，所以用 `.env` 时必须先 `source .env`。
+```bash
+cp .env.example .env
+```
+
+编辑 `.env`，把 `your_pushplus_token_here` 换成你在 [PushPlus](https://www.pushplus.plus/) 获取的 token。每次运行推送前在该终端执行 `source .env`（仅 Linux/macOS），再执行 `python -m src.cli run ...`。本仓库不会自动加载 `.env`，所以必须先 `source .env`。
 
 ---
 
