@@ -46,13 +46,18 @@ def main() -> None:
         default=None,
         help="Run only this schedule id (default: match by cron)",
     )
+    run_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Execute plugins and log messages but do not send to channels",
+    )
     args = parser.parse_args()
 
     _setup_logging()
 
     if args.command == "run":
         try:
-            run(args.config, args.schedule)
+            run(args.config, args.schedule, args.dry_run)
         except FileNotFoundError as e:
             logging.error("%s", e)
             sys.exit(1)

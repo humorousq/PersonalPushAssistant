@@ -93,8 +93,12 @@ def schedules_to_run(config: dict, now: datetime, schedule_id: str | None) -> li
     return to_run
 
 
-def run(config_path: str | Path, schedule_id: str | None = None) -> None:
-    """Load config, validate, run matched schedules and send messages."""
+def run(config_path: str | Path, schedule_id: str | None = None, dry_run: bool = False) -> None:
+    """Load config, validate, run matched schedules and send messages.
+
+    If dry_run is True, plugins are executed and messages are generated,
+    but no channel.send(...) is called; messages are only logged.
+    """
     path = Path(config_path)
     if not path.exists():
         raise FileNotFoundError(f"config not found: {path}")
@@ -111,6 +115,10 @@ def run(config_path: str | Path, schedule_id: str | None = None) -> None:
     if not schedules:
         logger.info("No schedules to run (current time does not match any cron). Use --schedule <id> to run a schedule anyway.")
         return
+    if dry_run:
+        logger.info(
+            "Dry-run mode enabled: will execute plugins but not send any messages to channels."
+        )
     logger.info("Running %s schedule(s): %s", len(schedules), [s.get("id") for s in schedules])
 
     for sch in schedules:
@@ -149,6 +157,16 @@ def run(config_path: str | Path, schedule_id: str | None = None) -> None:
                     target = m.target_recipient or recipient_id
                     if target not in recipients:
                         logger.warning("message target_recipient '%s' not in recipients, skip", target)
+                        continue
+                    if dry_run:
+                        preview = (m.body or "")[:200].replace("\n", " ")
+                        logger.info(
+                            "Dry-run: would send to recipient='%s' via channel='%s' title=%r preview=%r",
+                            target,
+                            chan_type,
+                            m.title,
+                            preview,
+                        )
                         continue
                     send_cfg = recipients[target].get("channel") or {}
                     channel.send(m, send_cfg)

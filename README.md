@@ -84,6 +84,9 @@ python -m src.cli run --config config/config.yaml
 
 # 仅执行指定 schedule（不按时间判断），例如本地测试
 python -m src.cli run --schedule test
+
+# 开发 / 调试插件时，仅生成消息、不真正推送（dry-run 模式）
+python -m src.cli run --schedule stocks_1024 --dry-run
 ```
 
 ## GitHub Actions
