@@ -213,8 +213,19 @@ class StocksDailyBriefPlugin:
                     # 2) 否则：A 股附加接口返回的名称，港股仅展示代码，避免乱码
                     if not q.symbol.strip().upper().endswith(".HK") and q.name:
                         label = f"{label} {q.name}"
+
+                # 涨跌幅带颜色（PushPlus markdown 支持部分 HTML）：
+                # 涨：红色；跌：绿色；平：默认颜色。
+                change_raw = f"{sign}{q.change_pct:.2f}%"
+                if q.change_pct > 0:
+                    change_str = f'<font color="red">{change_raw}</font>'
+                elif q.change_pct < 0:
+                    change_str = f'<font color="green">{change_raw}</font>'
+                else:
+                    change_str = change_raw
+
                 lines.append(
-                    f"- {label}：现价 {q.current:.2f}（{sign}{q.change_pct:.2f}%），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
+                    f"- {label}：现价 {q.current:.2f}（{change_str}），昨收 {q.prev_close:.2f}，今开 {q.open_today:.2f}"
                 )
 
         if with_news and news_per_symbol > 0:
