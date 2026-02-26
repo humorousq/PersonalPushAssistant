@@ -170,7 +170,7 @@ def _fetch_news(keyword: str, limit: int) -> list[tuple[str, str]]:
 
 
 class StocksDailyBriefPlugin:
-    """Plugin id: stocks.daily-brief. Outputs one Markdown PushMessage (spec 4)."""
+    """Plugin id: stocks.daily-brief. Outputs one HTML PushMessage (spec 4)."""
 
     id = "stocks.daily-brief"
 
@@ -196,13 +196,22 @@ class StocksDailyBriefPlugin:
         news_per_symbol = max(0, int(news_per_symbol))
 
         date_str = ctx.now.strftime("%Y-%m-%d")
-        lines: list[str] = ["# 今日股票简报（" + date_str + "）", "", "## 股票概览", ""]
-
         quotes = _fetch_quotes(symbols)
 
+        # HTML 容器
+        blocks: list[str] = []
+        blocks.append(
+            f"<h2 style=\"margin:0 0 12px;\">今日股票简报（{date_str}）</h2>"
+        )
+
+        # 每只股票一个卡片
         for q in quotes:
             if q.failed:
-                lines.append(f"- {q.symbol}：获取失败（{q.error_msg}）")
+                blocks.append(
+                    f"<div style=\"margin-bottom:8px;color:#e53935;\">"
+                    f"{q.symbol}：获取失败（{q.error_msg}）"
+                    f"</div>"
+                )
                 continue
 
             code = q.symbol
@@ -218,12 +227,12 @@ class StocksDailyBriefPlugin:
 
             sign = "+" if q.change_pct >= 0 else ""
 
-            # 涨跌幅带颜色（PushPlus markdown 支持部分 HTML）
+            # 涨跌幅带颜色（涨红跌绿）
             change_raw = f"{sign}{q.change_pct:.2f}%"
             if q.change_pct > 0:
-                change_str = f'<font color="red">{change_raw}</font>'
+                change_str = f'<span style="color:#e53935;">{change_raw}</span>'
             elif q.change_pct < 0:
-                change_str = f'<font color="green">{change_raw}</font>'
+                change_str = f'<span style="color:#1b5e20;">{change_raw}</span>'
             else:
                 change_str = change_raw
 
@@ -232,43 +241,52 @@ class StocksDailyBriefPlugin:
             change_abs_sign = "+" if change_abs >= 0 else ""
             change_abs_str = f"{change_abs_sign}{change_abs:.2f}"
 
-            # 手机友好：每只股票一块，多行展示
             title_name = f" {name}" if name else ""
-            lines.append(f"**{code}{title_name}**")
-            lines.append(
-                f"- 现价：{q.current:.2f}（{change_str} / {change_abs_str}）"
+            blocks.append(
+                "<div style=\"margin-bottom:12px;\">"
+                f"<div style=\"font-weight:600;margin-bottom:4px;\">{code}{title_name}</div>"
+                f"<div>现价：<span style=\"font-weight:600;\">{q.current:.2f}</span>"
+                f"（{change_str} / {change_abs_str}）</div>"
+                f"<div>昨收 / 今开：{q.prev_close:.2f} / {q.open_today:.2f}</div>"
+                "</div>"
             )
-            lines.append(
-                f"- 昨收 / 今开：{q.prev_close:.2f} / {q.open_today:.2f}"
-            )
-            lines.append("")
 
+        # 可选新闻（默认关闭）
         if with_news and news_per_symbol > 0:
-            lines.append("")
-            lines.append("## 新闻")
+            blocks.append("<h3 style=\"margin:8px 0 4px;\">新闻</h3>")
             for q in quotes:
                 if q.failed or not q.name:
                     continue
-                lines.append("")
                 news_name = symbol_names.get(q.symbol) or q.name
-                # 港股未配置自定义名称时，直接用代码作标题，避免乱码
                 if q.symbol.strip().upper().endswith(".HK") and q.symbol not in symbol_names:
-                    lines.append(f"### {q.symbol}")
+                    title_html = q.symbol
                 else:
-                    lines.append(f"### {q.symbol} {news_name}")
+                    title_html = f"{q.symbol} {news_name}"
+                blocks.append(
+                    f"<div style=\"margin-top:6px;font-weight:600;\">{title_html}</div>"
+                )
                 news_list = _fetch_news(q.name, news_per_symbol)
                 if not news_list:
-                    lines.append("暂无相关新闻。")
+                    blocks.append("<div style=\"color:#757575;\">暂无相关新闻。</div>")
                 else:
-                    for idx, (title, url) in enumerate(news_list, 1):
-                        lines.append(f"{idx}. {title} - [链接]({url})")
+                    blocks.append("<ul style=\"padding-left:18px;margin:4px 0 8px;\">")
+                    for title, url in news_list:
+                        blocks.append(
+                            f"<li><a href=\"{url}\" target=\"_blank\">{title}</a></li>"
+                        )
+                    blocks.append("</ul>")
 
-        body = "\n".join(lines).strip()
+        body = (
+            "<div style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"
+            "font-size:14px;line-height:1.6;\">"
+            + "".join(blocks)
+            + "</div>"
+        )
         return [
             PushMessage(
                 title=f"股票简报 {date_str}",
                 body=body,
-                format="markdown",
+                format="html",
                 target_recipient=None,
             )
         ]

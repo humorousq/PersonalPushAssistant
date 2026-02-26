@@ -42,7 +42,12 @@ class PushPlusChannel:
         logger.info("PushPlus token: length=%s prefix=%s (check .env matches)", len(token), mask)
         title = msg.title
         content = msg.body
-        template = "markdown" if msg.format == "markdown" else "txt"
+        if msg.format == "markdown":
+            template = "markdown"
+        elif msg.format == "html":
+            template = "html"
+        else:
+            template = "txt"
         payload: dict[str, Any] = {
             "token": token,
             "title": title,
