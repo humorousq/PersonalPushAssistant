@@ -6,7 +6,11 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from src.runner import run
+
+load_dotenv()
 
 DEFAULT_CONFIG = "config/config.yaml"
 LOG_DIR = Path("logs")

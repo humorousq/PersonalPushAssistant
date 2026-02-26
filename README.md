@@ -29,9 +29,8 @@
    ```bash
    cp .env.example .env
    ```
-   编辑 `.env`，把 `your_pushplus_token_here` 换成你的 PushPlus token。然后：
+   编辑 `.env`，把 `your_pushplus_token_here` 换成你的 PushPlus token。然后（程序会自动加载 `.env`，无需再执行 `source .env`）：
    ```bash
-   source .env
    python -m src.cli run --schedule test
    ```
 
@@ -46,7 +45,7 @@
 cp .env.example .env
 ```
 
-编辑 `.env`，把 `your_pushplus_token_here` 换成你在 [PushPlus](https://www.pushplus.plus/) 获取的 token。每次运行推送前在该终端执行 `source .env`（仅 Linux/macOS），再执行 `python -m src.cli run ...`。本仓库不会自动加载 `.env`，所以必须先 `source .env`。
+编辑 `.env`，把 `your_pushplus_token_here` 换成你在 [PushPlus](https://www.pushplus.plus/) 获取的 token。运行 `python -m src.cli run ...` 时程序会自动加载项目根目录下的 `.env`，无需手动 `source .env`。
 
 ---
 
