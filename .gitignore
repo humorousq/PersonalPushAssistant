@@ -1,4 +1,8 @@
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
 config/config.yaml
 __pycache__/
 *.pyc

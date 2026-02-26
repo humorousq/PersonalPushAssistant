@@ -1,0 +1,75 @@
+---
+description: Core background and conventions for the PersonalPushAssistant project
+alwaysApply: true
+---
+
+# PersonalPushAssistant 项目背景与约定
+
+## 项目定位
+
+- Python 3.10+ 的「个人推送助理」，按时间调度插件内容，通过 PushPlus 推送到指定接收人。
+- 典型用例：按 cron 定时跑任务（如股票早报），或者本地手动通过 `--schedule` 触发。
+
+## 运行方式（CLI）
+
+- 统一入口：`python -m src.cli run [--config path] [--schedule id] [--dry-run]`
+- `--config`：
+  - 默认使用 `config/config.yaml`，示例为 `config/config.example.yaml`（示例文件受版本控制，实际配置文件被 gitignore）。
+- `--schedule`：
+  - 不指定时，根据当前时间匹配各 schedule 的 cron 表达式（UTC）。
+  - 指定时（如 `--schedule stocks_1024`）直接执行对应 schedule，不看时间。
+- `--dry-run`：
+  - 执行插件并生成消息，但**不发送**到 PushPlus，只在日志中输出预览和完整内容。
+
+## 配置与环境变量
+
+- 环境变量通过 `.env` + `python-dotenv` 自动加载：
+  - 仓库中提供 `.env.example`，用户本地复制为 `.env` 并填入 `PUSHPLUS_TOKEN_ME` 等。
+  - 代码在 `src/cli.py` 里调用 `load_dotenv()`，无需用户手动 `source .env`。
+- `config/config.yaml`：
+  - 从 `config/config.example.yaml` 复制而来，**被 gitignore**，只能按示例阅读，不要提交用户的私有配置。
+  - Token 支持 `${ENV_NAME}` 占位符，运行时由 `PushPlusChannel` 用环境变量替换。
+
+## 日志约定
+
+- 日志由 `src/cli.py` 统一配置：
+  - 输出到 `stderr` 和 `logs/app.log`（UTF-8）。
+  - `logs/` 目录被 gitignore，**不要提交日志文件**。
+- `src/runner.py`：
+  - 未命中任何 schedule 时会写明原因，并提示使用 `--schedule <id>`。
+  - 在 `--dry-run` 模式下，会记录「Dry-run 预览」和完整消息体，便于调试插件输出。
+
+## PushPlus 通道与模板
+
+- 实现路径：`src/channel/pushplus.py`。
+- 模板选择：
+  - `msg.format == "markdown"` → `template="markdown"`
+  - `msg.format == "html"` → `template="html"`
+  - 其他 → `template="txt"`
+- 发送失败或接口返回 `code != 200` 会在日志中记录错误信息。
+
+## 股票简报插件（stocks.daily-brief）
+
+- 插件路径：`src/plugins/stocks_daily.py`，插件 id 为 `stocks.daily-brief`。
+- 数据来源：
+  - 行情来自新浪 `hq.sinajs.cn`：
+    - A 股：使用名称、今开、昨收、现价等字段。
+    - 港股：根据 `.HK` 代码映射为 `hkXXXXX`，并按港股字段顺序解析（今开、昨收、现价）。
+  - 新闻来自东方财富搜索，仅在 `with_news=true` 时启用，且为**可选、弱相关参考**。
+- 展示约定（当前版本）：
+  - **输出格式为 HTML**，并通过 PushPlus 的 `html` 模板发送。
+  - 股票概览使用单个表格，列为：名称 / 现价 / 涨跌（涨跌幅 + 涨跌额）/ 昨今（昨收 / 今开）。
+  - 涨跌幅使用红/绿 `<span>` 上色（涨红、跌绿），适配手机端阅读。
+  - 港股默认不相信新浪返回的名称，统一通过 `symbol_names` 配置映射，如：
+    - `symbol_names: { "1024.HK": "快手-W", "2015.HK": "理想汽车-W" }`。
+  - `with_news` 在示例配置中默认为 `false`，新闻仅在用户显式开启时生成。
+
+## 配置示例约定
+
+- 示例配置存放在 `config/config.example.yaml`：
+  - 包含 A 股和股票简报插件的**参考配置**，不包含用户私密 token。
+  - 示例中的 `with_news` 默认为 `false`，避免默认推送噪音新闻。
+- 实际配置 `config/config.yaml`：
+  - 由用户本地复制并修改，不应被读取或提交到 GitHub。
+  - 当需要描述项目行为时，优先以示例文件为参考，而不是假定用户本地配置内容。
+
