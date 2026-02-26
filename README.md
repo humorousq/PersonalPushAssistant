@@ -37,6 +37,13 @@
 
 > 提示：不想每次输入 token，可复制 `.env.example` 为 `.env`，把里面的 token 填好；在终端执行 `source .env`（仅 Linux/macOS）后再运行上面的 `python -m src.cli run --schedule test`。
 
+### PUSHPLUS_TOKEN_ME 在哪里设置？
+
+`PUSHPLUS_TOKEN_ME` 是**环境变量**，需要在运行命令的终端里能被读到。两种常用方式：
+
+- **方式一（临时）**：在当前终端执行 `export PUSHPLUS_TOKEN_ME=你的token`，再运行 `python -m src.cli run ...`。关闭终端后失效。
+- **方式二（持久）**：复制 `.env.example` 为 `.env`，在 `.env` 里把 token 填好；每次运行前在该终端执行 `source .env`（仅 Linux/macOS），再运行推送命令。本仓库不会自动加载 `.env`，所以用 `.env` 时必须先 `source .env`。
+
 ---
 
 ## 环境要求
