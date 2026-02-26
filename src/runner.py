@@ -167,6 +167,12 @@ def run(config_path: str | Path, schedule_id: str | None = None, dry_run: bool =
                             m.title,
                             preview,
                         )
+                        logger.info(
+                            "Dry-run body for recipient='%s' title=%r:\n%s",
+                            target,
+                            m.title,
+                            m.body or "",
+                        )
                         continue
                     send_cfg = recipients[target].get("channel") or {}
                     channel.send(m, send_cfg)

@@ -105,7 +105,13 @@ def _fetch_quotes(symbols: list[str]) -> list[_Quote]:
         try:
             if is_hk:
                 # 港股：0=英文名,1=中文名,2=今开,3=昨收,6=现价
-                name = parts[1].strip() or parts[0].strip()
+                cn_name = parts[1].strip()
+                en_name = parts[0].strip()
+                # 若中文名包含至少一个汉字则优先用中文名，否则退回英文名，避免乱码
+                if re.search(r"[\u4e00-\u9fff]", cn_name):
+                    name = cn_name
+                else:
+                    name = cn_name or en_name
                 open_t = float(parts[2])
                 prev = float(parts[3])
                 curr = float(parts[6])
