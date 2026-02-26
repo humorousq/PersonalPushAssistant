@@ -14,7 +14,8 @@ from src.models import PluginContext, PushMessage
 
 logger = logging.getLogger(__name__)
 
-# Sina: 0=name, 1=今开, 2=昨收, 3=现价
+# Sina A 股: 0=名称, 1=今开, 2=昨收, 3=现价
+# Sina 港股: 0=英文名, 1=中文名, 2=今开, 3=昨收, 6=现价
 SINA_HQ_URL = "http://hq.sinajs.cn/list="
 EASTMONEY_NEWS_URL = "https://so.eastmoney.com/news/s"
 
@@ -75,21 +76,45 @@ def _fetch_quotes(symbols: list[str]) -> list[_Quote]:
 
     quotes: list[_Quote] = []
     for i, symbol in enumerate(symbols):
-        # Response format: var hq_str_sh600519="name,open,prev_close,current,...";
+        s_upper = symbol.strip().upper()
+        is_hk = s_upper.endswith(".HK")
+        # Response format:
+        # - A 股: var hq_str_sh600519="name,open,prev_close,current,...";
+        # - 港股: var hq_str_hk01024="en_name,cn_name,open,prev_close,...,current,...";
         pattern = re.compile(r'var\s+hq_str_' + re.escape(sina_codes[i]) + r'="([^"]*)"')
         m = pattern.search(text)
         if not m:
             quotes.append(_Quote(symbol, "", 0.0, 0.0, 0.0, 0.0, failed=True, error_msg="无数据"))
             continue
         parts = m.group(1).split(",")
-        if len(parts) < 4:
-            quotes.append(_Quote(symbol, parts[0] if parts else "", 0.0, 0.0, 0.0, 0.0, failed=True, error_msg="字段不足"))
+        min_len = 7 if is_hk else 4
+        if len(parts) < min_len:
+            quotes.append(
+                _Quote(
+                    symbol,
+                    parts[1 if is_hk and len(parts) > 1 else 0] if parts else "",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    failed=True,
+                    error_msg="字段不足",
+                )
+            )
             continue
         try:
-            name = parts[0].strip()
-            open_t = float(parts[1])
-            prev = float(parts[2])
-            curr = float(parts[3])
+            if is_hk:
+                # 港股：0=英文名,1=中文名,2=今开,3=昨收,6=现价
+                name = parts[1].strip() or parts[0].strip()
+                open_t = float(parts[2])
+                prev = float(parts[3])
+                curr = float(parts[6])
+            else:
+                # A 股：0=名称,1=今开,2=昨收,3=现价
+                name = parts[0].strip()
+                open_t = float(parts[1])
+                prev = float(parts[2])
+                curr = float(parts[3])
             change_pct = ((curr - prev) / prev * 100) if prev else 0.0
             quotes.append(_Quote(symbol, name, prev, open_t, curr, change_pct))
         except (ValueError, IndexError) as e:
