@@ -361,6 +361,15 @@ class GoldDailyBriefPlugin:
         if price_precision < 0:
             price_precision = 2
 
+        # 计算昨收使用的历史天数，用于表头展示 T-n
+        history_days_raw = provider_cfg.get("history_days")
+        try:
+            history_days = int(history_days_raw) if history_days_raw is not None else 1
+        except (TypeError, ValueError):
+            history_days = 1
+        if history_days < 1:
+            history_days = 1
+
         date_str = ctx.now.strftime("%Y-%m-%d")
         quotes = _fetch_quotes(symbols, symbol_names, provider_cfg, ctx.now)
 
@@ -368,13 +377,14 @@ class GoldDailyBriefPlugin:
         blocks.append(
             f"<h2 style=\"margin:0 0 8px;font-size:15px;font-weight:600;\">今日金价简报（{date_str}）</h2>"
         )
+        history_label = f"昨收(T-{history_days})"
         blocks.append(
             "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
             "<thead>"
             "<tr>"
             "<th style=\"text-align:left;padding:4px 6px;\">品种</th>"
             "<th style=\"text-align:right;padding:4px 6px;\">现价</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">昨收</th>"
+            f"<th style=\"text-align:right;padding:4px 6px;\">{history_label}</th>"
             "<th style=\"text-align:right;padding:4px 6px;\">涨跌</th>"
             "</tr>"
             "</thead>"
