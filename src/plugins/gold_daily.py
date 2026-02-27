@@ -158,6 +158,12 @@ def _fetch_metalpriceapi_rates(provider_cfg: dict[str, Any], currencies: list[st
     rates = _extract_rates(data if isinstance(data, dict) else {})
     if not rates:
         raise ValueError("金价接口未返回可用 rates")
+
+    # metalpriceapi 默认按每金衡盎司计价；支持通过 provider.unit 配置按克换算
+    unit = str(provider_cfg.get("unit") or "ounce").strip().lower()
+    if unit == "gram":
+        ounce_to_gram = 31.1034768
+        rates = {k: v / ounce_to_gram for k, v in rates.items()}
     return rates
 
 

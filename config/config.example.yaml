@@ -36,14 +36,15 @@ plugin_configs:
   gold-me:
     symbols: ["XAUUSD", "XAUCNY"]
     symbol_names:
-      XAUUSD: "现货黄金(美元/盎司)"
-      XAUCNY: "现货黄金(人民币/盎司)"
+      XAUUSD: "现货黄金(美元/克)"
+      XAUCNY: "现货黄金(人民币/克)"
     provider:
       # 默认示例：使用 metalpriceapi
       type: metalpriceapi
       api_key_env: METALPRICE_API_KEY
       endpoint: "https://api.metalpriceapi.com/v1/latest"
       base_currency: XAU
+      unit: gram  # 将每盎司价格按 31.1034768 换算为每克
       # 如需使用 FreeGoldPrice API，可参考下面的配置（取消注释并填入环境变量）：
       # type: freegoldprice
       # api_key_env: FREEGOLDPRICE_API_KEY
