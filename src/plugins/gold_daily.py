@@ -210,6 +210,41 @@ def _fetch_metalpriceapi_rates_on_date(
     return rates
 
 
+def _fetch_metalpriceapi_fx_rates(
+    provider_cfg: dict[str, Any],
+    base: str,
+    currencies: list[str],
+) -> dict[str, float]:
+    api_key_env = str(provider_cfg.get("api_key_env") or "METALPRICE_API_KEY")
+    api_key = os.environ.get(api_key_env, "").strip()
+    if not api_key:
+        raise ValueError(f"缺少 API key 环境变量: {api_key_env}")
+
+    base_currency = str(base or "CNY").strip().upper()
+
+    endpoint = str(provider_cfg.get("endpoint") or "https://api.metalpriceapi.com/v1/latest").strip()
+    params = {
+        "api_key": api_key,
+        "base": base_currency,
+        "currencies": ",".join(currencies),
+    }
+    resp = requests.get(endpoint, params=params, timeout=10)
+    if resp.status_code != 200:
+        raise ValueError(f"汇率接口请求失败: status={resp.status_code}")
+
+    data = resp.json()
+    if isinstance(data, dict) and data.get("success") is False:
+        err_msg = ""
+        if isinstance(data.get("error"), dict):
+            err_msg = str(data["error"].get("info") or data["error"].get("message") or "")
+        raise ValueError(err_msg or "汇率接口返回失败")
+
+    rates = _extract_rates(data if isinstance(data, dict) else {})
+    if not rates:
+        raise ValueError("汇率接口未返回可用 rates")
+    return rates
+
+
 def _fetch_quotes(
     symbols: list[str],
     symbol_names: dict[str, str],
@@ -370,6 +405,8 @@ class GoldDailyBriefPlugin:
         if history_days < 1:
             history_days = 1
 
+        fx_cfg = cfg.get("fx") if isinstance(cfg.get("fx"), dict) else {}
+
         date_str = ctx.now.strftime("%Y-%m-%d")
         quotes = _fetch_quotes(symbols, symbol_names, provider_cfg, ctx.now)
 
@@ -426,6 +463,62 @@ class GoldDailyBriefPlugin:
             )
 
         blocks.append("</tbody></table>")
+
+        # 可选汇率区块：基于 base 对多种货币（例如 base=CNY，对 USD/JPY 等）
+        fx_rows: list[tuple[str, str, str]] = []
+        fx_base_label = ""
+        if fx_cfg:
+            raw_fx_symbols = fx_cfg.get("currencies")
+            if isinstance(raw_fx_symbols, (list, tuple)):
+                fx_currencies = [str(c).strip().upper() for c in raw_fx_symbols if str(c).strip()]
+            else:
+                fx_currencies = []
+            if fx_currencies:
+                fx_base = str(fx_cfg.get("base") or "CNY").strip().upper()
+                fx_labels_raw = fx_cfg.get("labels") or {}
+                fx_labels: dict[str, str] = (
+                    {str(k).strip().upper(): str(v) for k, v in fx_labels_raw.items()}
+                    if isinstance(fx_labels_raw, dict)
+                    else {}
+                )
+                try:
+                    fx_rates = _fetch_metalpriceapi_fx_rates(provider_cfg, fx_base, fx_currencies)
+                    fx_base_label = fx_base
+                    for cur in fx_currencies:
+                        rate = _to_float(fx_rates.get(cur))
+                        if rate is None:
+                            continue
+                        name = fx_labels.get(cur, cur)
+                        fx_rows.append((name, cur, f"{rate:.4f}"))
+                except Exception as e:
+                    blocks.append(
+                        f"<div style=\"margin-top:8px;color:#e53935;\">汇率获取失败：{e}</div>"
+                    )
+
+        if fx_rows and fx_base_label:
+            blocks.append(
+                "<div style=\"margin-top:10px;font-size:13px;font-weight:600;\">"
+                f"汇率参考（1 {fx_base_label}）"
+                "</div>"
+            )
+            blocks.append(
+                "<table style=\"width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;\">"
+                "<thead>"
+                "<tr>"
+                "<th style=\"text-align:left;padding:3px 4px;width:40%;\">货币</th>"
+                "<th style=\"text-align:right;padding:3px 4px;width:60%;\">1 基础货币 =</th>"
+                "</tr>"
+                "</thead>"
+                "<tbody>"
+            )
+            for name, code, rate_str in fx_rows:
+                blocks.append(
+                    "<tr>"
+                    f"<td style=\"padding:3px 4px;border-top:1px solid #eee;\">{name} ({code})</td>"
+                    f"<td style=\"padding:3px 4px;border-top:1px solid #eee;text-align:right;white-space:nowrap;\">{rate_str}</td>"
+                    "</tr>"
+                )
+            blocks.append("</tbody></table>")
         if failed_quotes:
             blocks.append("<div style=\"margin-top:8px;color:#e53935;\">获取失败：</div>")
             for q in failed_quotes:

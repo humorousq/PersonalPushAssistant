@@ -51,3 +51,9 @@ plugin_configs:
       # action: GSJ  # Gold & Silver per ounce, JSON
     display:
       price_precision: 2
+    fx:
+      base: CNY
+      currencies: ["USD", "JPY"]
+      labels:
+        USD: "美元"
+        JPY: "日元"
