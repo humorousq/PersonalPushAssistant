@@ -97,7 +97,14 @@ def _fetch_freegoldprice_rates(provider_cfg: dict[str, Any], currencies: list[st
     elif isinstance(data.get("error"), str):
         error_msg = data["error"]
 
-    gold_block = data.get("gold")
+    payload: dict[str, Any] = {}
+    action_block = data.get(action)
+    if isinstance(action_block, dict):
+        payload = action_block
+    else:
+        payload = data
+
+    gold_block = payload.get("gold") or payload.get("Gold")
     if not isinstance(gold_block, dict):
         if error_msg:
             raise ValueError(f"金价接口未返回 gold 数据（{error_msg}）")
