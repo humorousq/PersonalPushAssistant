@@ -64,6 +64,46 @@ def _symbol_to_currency(symbol: str) -> str | None:
     return mapping.get(normalized)
 
 
+def _fetch_freegoldprice_rates(provider_cfg: dict[str, Any], currencies: list[str]) -> dict[str, float]:
+    api_key_env = str(provider_cfg.get("api_key_env") or "FREEGOLDPRICE_API_KEY")
+    api_key = os.environ.get(api_key_env, "").strip()
+    if not api_key:
+        raise ValueError(f"缺少 API key 环境变量: {api_key_env}")
+
+    endpoint = str(provider_cfg.get("endpoint") or "https://freegoldprice.org/api/v2").strip()
+    action = str(provider_cfg.get("action") or "GSJ").strip()
+
+    params = {
+        "key": api_key,
+        "action": action,
+    }
+    resp = requests.get(endpoint, params=params, timeout=10)
+    if resp.status_code != 200:
+        raise ValueError(f"金价接口请求失败: status={resp.status_code}")
+
+    data = resp.json()
+    if not isinstance(data, dict):
+        raise ValueError("金价接口返回格式异常")
+
+    gold_block = data.get("gold")
+    if not isinstance(gold_block, dict):
+        raise ValueError("金价接口未返回 gold 数据")
+
+    rates: dict[str, float] = {}
+    for cur in currencies:
+        cur_key = str(cur).upper()
+        entry = gold_block.get(cur_key)
+        if not isinstance(entry, dict):
+            continue
+        price = _to_float(entry.get("ask") or entry.get("bid"))
+        if price is not None:
+            rates[cur_key] = price
+
+    if not rates:
+        raise ValueError("金价接口未返回所需币种的报价")
+    return rates
+
+
 def _fetch_metalpriceapi_rates(provider_cfg: dict[str, Any], currencies: list[str]) -> dict[str, float]:
     api_key_env = str(provider_cfg.get("api_key_env") or "METALPRICE_API_KEY")
     api_key = os.environ.get(api_key_env, "").strip()
@@ -120,19 +160,21 @@ def _fetch_quotes(
         ]
 
     provider_type = str(provider_cfg.get("type") or "metalpriceapi").strip().lower()
-    if provider_type != "metalpriceapi":
-        return [
-            _GoldQuote(
-                symbol=s,
-                name=symbol_names.get(s, s),
-                failed=True,
-                error_msg=f"暂不支持 provider.type={provider_type}",
-            )
-            for s in symbols
-        ]
-
     try:
-        rates = _fetch_metalpriceapi_rates(provider_cfg, currencies)
+        if provider_type == "metalpriceapi":
+            rates = _fetch_metalpriceapi_rates(provider_cfg, currencies)
+        elif provider_type == "freegoldprice":
+            rates = _fetch_freegoldprice_rates(provider_cfg, currencies)
+        else:
+            return [
+                _GoldQuote(
+                    symbol=s,
+                    name=symbol_names.get(s, s),
+                    failed=True,
+                    error_msg=f"暂不支持 provider.type={provider_type}",
+                )
+                for s in symbols
+            ]
     except Exception as e:
         return [
             _GoldQuote(
