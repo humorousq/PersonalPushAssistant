@@ -34,9 +34,8 @@ plugin_configs:
     with_news: false  # 默认关闭新闻，避免噪音；需要时可打开
     news_per_symbol: 3
   gold-me:
-    symbols: ["XAUUSD", "XAUCNY"]
+    symbols: ["XAUCNY"]
     symbol_names:
-      XAUUSD: "现货黄金(美元/克)"
       XAUCNY: "现货黄金(人民币/克)"
     provider:
       # 默认示例：使用 metalpriceapi
