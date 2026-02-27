@@ -361,7 +361,7 @@ class GoldDailyBriefPlugin:
         if price_precision < 0:
             price_precision = 2
 
-        # 计算昨收使用的历史天数，用于表头展示 T-n
+        # 计算昨收使用的历史天数，用于表头展示具体日期
         history_days_raw = provider_cfg.get("history_days")
         try:
             history_days = int(history_days_raw) if history_days_raw is not None else 1
@@ -377,7 +377,8 @@ class GoldDailyBriefPlugin:
         blocks.append(
             f"<h2 style=\"margin:0 0 8px;font-size:15px;font-weight:600;\">今日金价简报（{date_str}）</h2>"
         )
-        history_label = f"昨收(T-{history_days})"
+        prev_date_label = (ctx.now.date() - timedelta(days=history_days)).strftime("%Y-%m-%d")
+        history_label = f"昨收({prev_date_label})"
         blocks.append(
             "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
             "<thead>"
