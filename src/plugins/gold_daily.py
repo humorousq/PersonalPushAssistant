@@ -128,17 +128,19 @@ def _fetch_freegoldprice_rates(provider_cfg: dict[str, Any], currencies: list[st
     return rates
 
 
-def _fetch_metalpriceapi_rates(provider_cfg: dict[str, Any], currencies: list[str]) -> dict[str, float]:
+def _fetch_metalpriceapi_rates(
+    provider_cfg: dict[str, Any], currencies: list[str]
+) -> dict[str, float]:
     api_key_env = str(provider_cfg.get("api_key_env") or "METALPRICE_API_KEY")
     api_key = os.environ.get(api_key_env, "").strip()
     if not api_key:
         raise ValueError(f"缺少 API key 环境变量: {api_key_env}")
 
-    endpoint = str(provider_cfg.get("endpoint") or "https://api.metalpriceapi.com/v1/latest").strip()
     base_currency = str(provider_cfg.get("base_currency") or "XAU").strip().upper()
     if base_currency != "XAU":
         raise ValueError("provider.base_currency 仅支持 XAU")
 
+    endpoint = str(provider_cfg.get("endpoint") or "https://api.metalpriceapi.com/v1/latest").strip()
     params = {
         "api_key": api_key,
         "base": base_currency,
@@ -167,10 +169,9 @@ def _fetch_metalpriceapi_rates(provider_cfg: dict[str, Any], currencies: list[st
     return rates
 
 
-def _fetch_metalpriceapi_change(
-    provider_cfg: dict[str, Any],
-    currencies: list[str],
-) -> dict[str, dict[str, float]]:
+def _fetch_metalpriceapi_rates_yesterday(
+    provider_cfg: dict[str, Any], currencies: list[str]
+) -> dict[str, float]:
     api_key_env = str(provider_cfg.get("api_key_env") or "METALPRICE_API_KEY")
     api_key = os.environ.get(api_key_env, "").strip()
     if not api_key:
@@ -180,57 +181,32 @@ def _fetch_metalpriceapi_change(
     if base_currency != "XAU":
         raise ValueError("provider.base_currency 仅支持 XAU")
 
-    endpoint = str(
-        provider_cfg.get("change_endpoint")
-        or "https://api.metalpriceapi.com/v1/change"
-    ).strip()
-    params: dict[str, Any] = {
+    endpoint = "https://api.metalpriceapi.com/v1/yesterday"
+    params = {
         "api_key": api_key,
         "base": base_currency,
         "currencies": ",".join(currencies),
-        "date_type": "recent",
     }
-    unit = str(provider_cfg.get("unit") or "").strip().lower()
-    if unit in {"gram", "troy_oz", "kilogram"}:
-        params["unit"] = unit
-
     resp = requests.get(endpoint, params=params, timeout=10)
     if resp.status_code != 200:
-        raise ValueError(f"金价变动接口请求失败: status={resp.status_code}")
+        raise ValueError(f"昨日金价接口请求失败: status={resp.status_code}")
 
     data = resp.json()
     if isinstance(data, dict) and data.get("success") is False:
         err_msg = ""
         if isinstance(data.get("error"), dict):
             err_msg = str(data["error"].get("info") or data["error"].get("message") or "")
-        raise ValueError(err_msg or "金价变动接口返回失败")
-    if not isinstance(data, dict) or not isinstance(data.get("rates"), dict):
-        raise ValueError("金价变动接口返回格式异常")
+        raise ValueError(err_msg or "昨日金价接口返回失败")
 
-    change_map: dict[str, dict[str, float]] = {}
-    raw_rates = data["rates"]
-    for cur in currencies:
-        key = str(cur).upper()
-        entry = raw_rates.get(key)
-        if not isinstance(entry, dict):
-            continue
-        start_rate = _to_float(entry.get("start_rate"))
-        end_rate = _to_float(entry.get("end_rate"))
-        change = _to_float(entry.get("change"))
-        change_pct = _to_float(entry.get("change_pct"))
-        if start_rate is None or end_rate is None:
-            continue
-        change_map[key] = {
-            "start_rate": start_rate,
-            "end_rate": end_rate,
-            "change": change if change is not None else end_rate - start_rate,
-            "change_pct": change_pct
-            if change_pct is not None and change_pct != 0
-            else ((end_rate - start_rate) / start_rate * 100 if start_rate else 0.0),
-        }
-    if not change_map:
-        raise ValueError("金价变动接口未返回所需币种的涨跌数据")
-    return change_map
+    rates = _extract_rates(data if isinstance(data, dict) else {})
+    if not rates:
+        raise ValueError("昨日金价接口未返回可用 rates")
+
+    unit = str(provider_cfg.get("unit") or "ounce").strip().lower()
+    if unit == "gram":
+        ounce_to_gram = 31.1034768
+        rates = {k: v / ounce_to_gram for k, v in rates.items()}
+    return rates
 
 
 def _fetch_quotes(
@@ -256,9 +232,13 @@ def _fetch_quotes(
         ]
 
     provider_type = str(provider_cfg.get("type") or "metalpriceapi").strip().lower()
+    current_rates: dict[str, float] = {}
+    prev_rates: dict[str, float] = {}
+    rates: dict[str, float] = {}
     try:
         if provider_type == "metalpriceapi":
-            changes = _fetch_metalpriceapi_change(provider_cfg, currencies)
+            current_rates = _fetch_metalpriceapi_rates(provider_cfg, currencies)
+            prev_rates = _fetch_metalpriceapi_rates_yesterday(provider_cfg, currencies)
         elif provider_type == "freegoldprice":
             rates = _fetch_freegoldprice_rates(provider_cfg, currencies)
         else:
@@ -298,22 +278,9 @@ def _fetch_quotes(
             continue
 
         if provider_type == "metalpriceapi":
-            change_info = changes.get(currency) if "changes" in locals() else None
-            if not change_info:
-                quotes.append(
-                    _GoldQuote(
-                        symbol=symbol,
-                        name=display_name,
-                        failed=True,
-                        error_msg=f"缺少 {currency} 涨跌数据",
-                    )
-                )
-                continue
-            prev_close = _to_float(change_info.get("start_rate"))
-            current = _to_float(change_info.get("end_rate"))
-            change_abs = _to_float(change_info.get("change"))
-            change_pct = _to_float(change_info.get("change_pct"))
-            if prev_close is None or current is None:
+            current = _to_float(current_rates.get(currency))
+            prev_close = _to_float(prev_rates.get(currency))
+            if current is None or prev_close is None:
                 quotes.append(
                     _GoldQuote(
                         symbol=symbol,
@@ -323,13 +290,15 @@ def _fetch_quotes(
                     )
                 )
                 continue
+            change_abs = current - prev_close
+            change_pct = (change_abs / prev_close * 100) if prev_close else 0.0
             quotes.append(
                 _GoldQuote(
                     symbol=symbol,
                     name=display_name,
                     current=current,
                     prev_close=prev_close,
-                    change_abs=change_abs if change_abs is not None else current - prev_close,
+                    change_abs=change_abs,
                     change_pct=change_pct,
                 )
             )
