@@ -13,7 +13,7 @@
   - 支持配置多条调度计划（schedules），每条计划有独立 cron，下面可挂多个 job。
   - 每个 job = 接收人 + 插件 + 插件配置引用，允许不同接收人对同一插件有不同配置（从而得到不同内容）。
   - 支持在一天内不同时间执行不同插件，并发送到对应接收人。
-  - 首个插件：`stocks.daily-brief`。
+  - 插件：`stocks.daily-brief`、`gold.daily-brief`。
 
 ---
 
@@ -123,7 +123,7 @@ plugin_configs:    # 插件配置模板
 
 ---
 
-### 4. 插件接口与股票插件规格（`src/plugins/stocks_daily.py`）
+### 4. 插件接口与内容插件规格
 
 #### 4.1 插件注册约定
 
@@ -131,6 +131,7 @@ plugin_configs:    # 插件配置模板
   - `PLUGINS: dict[str, type[ContentPlugin]]`，或
   - 提供一个 `get_plugin(plugin_id: str) -> ContentPlugin` 工厂方法。
 - `stocks.daily-brief` 插件的 `id` 必须固定为 `"stocks.daily-brief"`。
+- `gold.daily-brief` 插件的 `id` 必须固定为 `"gold.daily-brief"`。
 
 #### 4.2 `stocks.daily-brief` 配置约定
 
@@ -187,6 +188,30 @@ plugin_configs:    # 插件配置模板
 
 - 结构清晰、可读性良好；
 - 避免过长（例如对总新闻条数做上限控制）。
+
+#### 4.5 `gold.daily-brief` 配置约定（`src/plugins/gold_daily.py`）
+
+插件从 `ctx.plugin_config` 读取以下字段（dict）：
+
+- `symbols: list[str]`（必填）
+  - 要关注的金价代码列表；v1 内置支持：
+    - `XAUUSD`：现货黄金（美元/盎司）
+    - `XAUCNY` / `XAUUSD_CNY`：现货黄金（人民币/盎司）
+- `symbol_names: dict[str, str]`（可选）
+  - 自定义展示名称，优先级高于默认名称。
+- `provider: dict`（可选，未配置时使用默认）
+  - `type: str`：v1 固定支持 `metalpriceapi`。
+  - `api_key_env: str`：金价 API key 对应的环境变量名（例如 `METALPRICE_API_KEY`）。
+  - `endpoint: str`：金价接口地址，默认 `https://api.metalpriceapi.com/v1/latest`。
+  - `base_currency: str`：默认 `XAU`。
+- `display: dict`（可选）
+  - `price_precision: int`：价格显示小数位，默认 `2`。
+
+行为约束：
+
+- 输出为单条 `PushMessage`，`format="html"`，由 PushPlus 使用 `html` 模板发送。
+- 主体展示一个「品种 / 现价 / 涨跌 / 昨今」表格；如接口未返回昨收/今开，字段可显示 `--`。
+- 单个 symbol 获取失败时，不中断整条消息；在表格下方以红字列出失败项和错误原因。
 
 ---
 

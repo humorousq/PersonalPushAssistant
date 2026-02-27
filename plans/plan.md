@@ -79,6 +79,11 @@ PersonalPushAssistant/
   - 实现插件逻辑：根据 `symbols`、`with_news` 等配置生成 Markdown 文本。
   - 验证在至少 1~2 个接收人、不同配置下输出不同内容。
 
+- **阶段 4.1：金价插件 `gold.daily-brief`**
+  - 新增金价简报插件，复用现有 Runner + PushPlus 通道能力。
+  - 通过高质量金价 API（API key 配置化）拉取多品种报价，输出 HTML 表格简报。
+  - 支持通过 `symbols` + `symbol_names` 做展示层配置，并在单个品种失败时保留整体推送。
+
 - **阶段 5：集成与自动化**
   - 编写 GitHub Actions workflow，定时触发 CLI。
   - 完善 README（说明配置方法、环境变量、如何扩展新插件/新接收人）。

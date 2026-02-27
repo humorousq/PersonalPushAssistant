@@ -12,7 +12,7 @@ class PushMessage:
 
     title: str
     body: str
-    format: Literal["text", "markdown"]
+    format: Literal["text", "markdown", "html"]
     target_recipient: str | None = None
     priority: str | None = None
     tags: list[str] | None = None

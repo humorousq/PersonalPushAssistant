@@ -101,6 +101,22 @@ python -m src.cli run --schedule stocks_1024 --dry-run
 
 - **placeholder**：占位插件，返回一条固定文本，用于验证 Runner 与通道。
 - **stocks.daily-brief**：股票早报。配置 `symbols`（如 `["600519.SH", "000858.SZ"]`）、可选的 `symbol_names`（代码到展示名的映射）、`with_news`、`news_per_symbol`。行情来自新浪（A 股 + 港股，港股默认只按代码展示），新闻来自东方财富搜索；**新闻默认关闭（with_news=false）且仅作参考，不保证强相关性。**
+- **gold.daily-brief**：每日金价简报。配置 `symbols`（v1 支持 `XAUUSD`、`XAUCNY`/`XAUUSD_CNY`）、可选 `symbol_names`、`provider`、`display`，输出 HTML 表格（品种/现价/涨跌/昨今）。
+
+### 每日金价插件快速启用
+
+1. 在 `config/config.yaml`（可由 `config/config.example.yaml` 复制）中配置：
+   - `plugin_configs.gold-me`（如 `symbols: ["XAUUSD", "XAUCNY"]`）
+   - `schedules[*].jobs` 里增加 `plugin_id: gold.daily-brief` 和 `config_ref: gold-me`
+2. 在 `.env` 中配置金价 API key（示例）：
+   ```bash
+   METALPRICE_API_KEY=your_api_key_here
+   ```
+3. 先做本地 dry-run 验证输出：
+   ```bash
+   python -m src.cli run --schedule gold_morning --dry-run
+   ```
+4. 确认输出正常后，去掉 `--dry-run` 即可正式推送。
 
 ## 扩展
 

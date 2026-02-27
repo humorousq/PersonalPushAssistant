@@ -20,6 +20,12 @@ schedules:
       - recipient_id: me
         plugin_id: stocks.daily-brief
         config_ref: stocks-me
+  - id: gold_morning
+    cron: "0 1 * * *"
+    jobs:
+      - recipient_id: me
+        plugin_id: gold.daily-brief
+        config_ref: gold-me
 
 plugin_configs:
   placeholder-me: {}
@@ -27,3 +33,15 @@ plugin_configs:
     symbols: ["600519.SH", "000858.SZ"]
     with_news: false  # 默认关闭新闻，避免噪音；需要时可打开
     news_per_symbol: 3
+  gold-me:
+    symbols: ["XAUUSD", "XAUCNY"]
+    symbol_names:
+      XAUUSD: "现货黄金(美元/盎司)"
+      XAUCNY: "现货黄金(人民币/盎司)"
+    provider:
+      type: metalpriceapi
+      api_key_env: METALPRICE_API_KEY
+      endpoint: "https://api.metalpriceapi.com/v1/latest"
+      base_currency: XAU
+    display:
+      price_precision: 2
