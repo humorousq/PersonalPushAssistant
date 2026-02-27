@@ -79,14 +79,28 @@ def _fetch_freegoldprice_rates(provider_cfg: dict[str, Any], currencies: list[st
     }
     resp = requests.get(endpoint, params=params, timeout=10)
     if resp.status_code != 200:
-        raise ValueError(f"金价接口请求失败: status={resp.status_code}")
+        body_preview = resp.text[:200].replace("\n", " ")
+        raise ValueError(f"金价接口请求失败: status={resp.status_code}, body={body_preview!r}")
 
     data = resp.json()
     if not isinstance(data, dict):
         raise ValueError("金价接口返回格式异常")
 
+    error_msg = ""
+    if isinstance(data.get("error"), dict):
+        error_msg = str(
+            data["error"].get("info")
+            or data["error"].get("message")
+            or data["error"].get("detail")
+            or ""
+        )
+    elif isinstance(data.get("error"), str):
+        error_msg = data["error"]
+
     gold_block = data.get("gold")
     if not isinstance(gold_block, dict):
+        if error_msg:
+            raise ValueError(f"金价接口未返回 gold 数据（{error_msg}）")
         raise ValueError("金价接口未返回 gold 数据")
 
     rates: dict[str, float] = {}
