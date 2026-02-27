@@ -101,7 +101,10 @@ def _fetch_freegoldprice_rates(provider_cfg: dict[str, Any], currencies: list[st
     if not isinstance(gold_block, dict):
         if error_msg:
             raise ValueError(f"金价接口未返回 gold 数据（{error_msg}）")
-        raise ValueError("金价接口未返回 gold 数据")
+        data_preview = repr(data)
+        if len(data_preview) > 200:
+            data_preview = data_preview[:200] + "...（截断）"
+        raise ValueError(f"金价接口未返回 gold 数据（响应片段: {data_preview}）")
 
     rates: dict[str, float] = {}
     for cur in currencies:
