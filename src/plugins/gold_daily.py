@@ -380,13 +380,13 @@ class GoldDailyBriefPlugin:
         prev_date_label = (ctx.now.date() - timedelta(days=history_days)).strftime("%m-%d")
         history_label = f"基准价({prev_date_label})"
         blocks.append(
-            "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
+            "<table style=\"width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;\">"
             "<thead>"
             "<tr>"
-            "<th style=\"text-align:left;padding:4px 6px;\">品种</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">现价</th>"
-            f"<th style=\"text-align:right;padding:4px 6px;\">{history_label}</th>"
-            "<th style=\"text-align:right;padding:4px 6px;\">涨跌</th>"
+            "<th style=\"text-align:left;padding:3px 4px;width:40%;\">品种</th>"
+            "<th style=\"text-align:right;padding:3px 4px;width:20%;\">现价</th>"
+            f"<th style=\"text-align:right;padding:3px 4px;width:20%;\">{history_label}</th>"
+            "<th style=\"text-align:right;padding:3px 4px;width:20%;\">涨跌</th>"
             "</tr>"
             "</thead>"
             "<tbody>"
@@ -415,10 +415,10 @@ class GoldDailyBriefPlugin:
             prev_str = f"{q.prev_close:.{price_precision}f}" if q.prev_close is not None else "--"
             blocks.append(
                 "<tr>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;\">{q.name}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{current_str}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{prev_str}</td>"
-                f"<td style=\"padding:4px 6px;border-top:1px solid #eee;text-align:right;\">{change_pct_str} / {change_abs_str}</td>"
+                f"<td style=\"padding:3px 4px;border-top:1px solid #eee;\">{q.name}</td>"
+                f"<td style=\"padding:3px 4px;border-top:1px solid #eee;text-align:right;white-space:nowrap;\">{current_str}</td>"
+                f"<td style=\"padding:3px 4px;border-top:1px solid #eee;text-align:right;white-space:nowrap;\">{prev_str}</td>"
+                f"<td style=\"padding:3px 4px;border-top:1px solid #eee;text-align:right;white-space:nowrap;\">{change_pct_str} / {change_abs_str}</td>"
                 "</tr>"
             )
 
