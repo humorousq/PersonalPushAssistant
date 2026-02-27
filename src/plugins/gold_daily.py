@@ -378,7 +378,7 @@ class GoldDailyBriefPlugin:
             f"<h2 style=\"margin:0 0 8px;font-size:15px;font-weight:600;\">今日金价简报（{date_str}）</h2>"
         )
         prev_date_label = (ctx.now.date() - timedelta(days=history_days)).strftime("%Y-%m-%d")
-        history_label = f"昨收({prev_date_label})"
+        history_label = f"基准价({prev_date_label})"
         blocks.append(
             "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">"
             "<thead>"
