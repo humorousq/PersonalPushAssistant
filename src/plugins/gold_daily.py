@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 import requests
@@ -169,8 +170,8 @@ def _fetch_metalpriceapi_rates(
     return rates
 
 
-def _fetch_metalpriceapi_rates_yesterday(
-    provider_cfg: dict[str, Any], currencies: list[str]
+def _fetch_metalpriceapi_rates_on_date(
+    provider_cfg: dict[str, Any], currencies: list[str], date_str: str
 ) -> dict[str, float]:
     api_key_env = str(provider_cfg.get("api_key_env") or "METALPRICE_API_KEY")
     api_key = os.environ.get(api_key_env, "").strip()
@@ -181,7 +182,7 @@ def _fetch_metalpriceapi_rates_yesterday(
     if base_currency != "XAU":
         raise ValueError("provider.base_currency 仅支持 XAU")
 
-    endpoint = "https://api.metalpriceapi.com/v1/yesterday"
+    endpoint = f"https://api.metalpriceapi.com/v1/{date_str}"
     params = {
         "api_key": api_key,
         "base": base_currency,
@@ -189,18 +190,18 @@ def _fetch_metalpriceapi_rates_yesterday(
     }
     resp = requests.get(endpoint, params=params, timeout=10)
     if resp.status_code != 200:
-        raise ValueError(f"昨日金价接口请求失败: status={resp.status_code}")
+        raise ValueError(f"历史金价接口请求失败: status={resp.status_code}")
 
     data = resp.json()
     if isinstance(data, dict) and data.get("success") is False:
         err_msg = ""
         if isinstance(data.get("error"), dict):
             err_msg = str(data["error"].get("info") or data["error"].get("message") or "")
-        raise ValueError(err_msg or "昨日金价接口返回失败")
+        raise ValueError(err_msg or "历史金价接口返回失败")
 
     rates = _extract_rates(data if isinstance(data, dict) else {})
     if not rates:
-        raise ValueError("昨日金价接口未返回可用 rates")
+        raise ValueError("历史金价接口未返回可用 rates")
 
     unit = str(provider_cfg.get("unit") or "ounce").strip().lower()
     if unit == "gram":
@@ -213,6 +214,7 @@ def _fetch_quotes(
     symbols: list[str],
     symbol_names: dict[str, str],
     provider_cfg: dict[str, Any],
+    now_dt,
 ) -> list[_GoldQuote]:
     currencies: list[str] = []
     for symbol in symbols:
@@ -238,7 +240,15 @@ def _fetch_quotes(
     try:
         if provider_type == "metalpriceapi":
             current_rates = _fetch_metalpriceapi_rates(provider_cfg, currencies)
-            prev_rates = _fetch_metalpriceapi_rates_yesterday(provider_cfg, currencies)
+            history_days_raw = provider_cfg.get("history_days")
+            try:
+                history_days = int(history_days_raw) if history_days_raw is not None else 1
+            except (TypeError, ValueError):
+                history_days = 1
+            if history_days < 1:
+                history_days = 1
+            target_date = (now_dt.date() - timedelta(days=history_days)).strftime("%Y-%m-%d")
+            prev_rates = _fetch_metalpriceapi_rates_on_date(provider_cfg, currencies, target_date)
         elif provider_type == "freegoldprice":
             rates = _fetch_freegoldprice_rates(provider_cfg, currencies)
         else:
@@ -352,7 +362,7 @@ class GoldDailyBriefPlugin:
             price_precision = 2
 
         date_str = ctx.now.strftime("%Y-%m-%d")
-        quotes = _fetch_quotes(symbols, symbol_names, provider_cfg)
+        quotes = _fetch_quotes(symbols, symbol_names, provider_cfg, ctx.now)
 
         blocks: list[str] = []
         blocks.append(
