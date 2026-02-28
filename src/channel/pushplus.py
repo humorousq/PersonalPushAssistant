@@ -55,8 +55,13 @@ class PushPlusChannel:
             "template": template,
         }
         topic = channel_config.get("topic")
-        if topic:
+        to = channel_config.get("to")
+        if to:
+            to = _resolve_token(to)
+        if topic and not to:
             payload["topic"] = topic
+        elif to:
+            payload["to"] = to
 
         try:
             resp = requests.post(PUSHPLUS_URL, json=payload, timeout=10)
