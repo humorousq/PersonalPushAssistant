@@ -26,6 +26,12 @@ schedules:
       - recipient_id: me
         plugin_id: gold.daily-brief
         config_ref: gold-me
+  - id: exchange_morning
+    cron: "0 2 * * *"
+    jobs:
+      - recipient_id: me
+        plugin_id: exchange.daily-brief
+        config_ref: exchange-me
 
 plugin_configs:
   placeholder-me: {}
@@ -47,3 +53,16 @@ plugin_configs:
       # endpoint: "https://api.tanshuapi.com/api/gold/v1/bankgold2"
     display:
       price_precision: 2
+  exchange-me:
+    banks: [BOC, ICBC]
+    currencies: [USD, EUR, JPY, HKD]
+    currency_names:
+      USD: 美元
+      EUR: 欧元
+      JPY: 日元
+      HKD: 港币
+    provider:
+      api_key_env: TANSHUAPI_KEY
+      # endpoint 可选，默认: https://api.tanshuapi.com/api/bank_exchange/v1/index
+    display:
+      price_precision: 4

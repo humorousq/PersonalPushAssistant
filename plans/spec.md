@@ -213,6 +213,29 @@ plugin_configs:    # 插件配置模板
 - 主体展示一个「品种 / 现价 / 涨跌 / 昨今」表格；如接口未返回昨收/今开，字段可显示 `--`。
 - 单个 symbol 获取失败时，不中断整条消息；在表格下方以红字列出失败项和错误原因。
 
+#### 4.6 `exchange.daily-brief` 配置约定（`src/plugins/exchange_daily.py`）
+
+插件从 `ctx.plugin_config` 读取以下字段（dict）：
+
+- `banks: list[str]`（必填）
+  - 银行编码列表，如 `[BOC, ICBC]`。支持：ICBC、BOC、ABCHINA、BANKCOMM、CCB、CMBCHINA、CEBBANK、SPDB、CIB、ECITIC。
+- `currencies: list[str]`（必填）
+  - 币种代码列表，如 `[USD, EUR, JPY, HKD]`。
+- `currency_names: dict[str, str]`（可选）
+  - 自定义币种展示名，如 `USD: 美元`。
+- `provider: dict`（可选）
+  - `api_key_env: str`：API key 环境变量名，默认 `TANSHUAPI_KEY`。
+  - `endpoint: str`：接口地址，默认 `https://api.tanshuapi.com/api/bank_exchange/v1/index`。
+- `display: dict`（可选）
+  - `price_precision: int`：价格显示小数位，默认 `4`。
+
+行为约束：
+
+- 输出为单条 `PushMessage`，`format="html"`，由 PushPlus 使用 `html` 模板发送。
+- 按银行分组展示，每银行一个表格，列为：币种 / 中间价 / 现汇买入 / 现汇卖出。
+- 单银行请求失败时，该银行下显示「获取失败」及错误信息，其它银行照常展示。
+- 某币种在某银行缺失时，对应单元格显示 `—`。
+
 ---
 
 ### 5. Runner 行为规范（`src/runner.py` + `src/cli.py`）

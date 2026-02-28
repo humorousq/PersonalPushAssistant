@@ -84,6 +84,11 @@ PersonalPushAssistant/
   - 通过高质量金价 API（API key 配置化）拉取多品种报价，输出 HTML 表格简报。
   - 支持通过 `symbols` + `symbol_names` 做展示层配置，并在单个品种失败时保留整体推送。
 
+- **阶段 4.2：银行汇率插件 `exchange.daily-brief`**
+  - 新增银行汇率简报插件，基于探数数据银行汇率 API。
+  - 支持配置多银行（banks）、多币种（currencies），按银行分组展示中间价、现汇买入、现汇卖出。
+  - 复用 TANSHUAPI_KEY，输出 HTML 格式简报。
+
 - **阶段 5：集成与自动化**
   - 编写 GitHub Actions workflow，定时触发 CLI。
   - 完善 README（说明配置方法、环境变量、如何扩展新插件/新接收人）。
