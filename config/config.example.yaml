@@ -47,14 +47,3 @@ plugin_configs:
       # endpoint: "https://api.tanshuapi.com/api/gold/v1/bankgold2"
     display:
       price_precision: 2
-    # 以下为旧 provider 参考（探数接口不支持汇率，如需汇率请用 metalpriceapi）
-    # provider:
-    #   type: metalpriceapi
-    #   api_key_env: METALPRICE_API_KEY
-    #   endpoint: "https://api.metalpriceapi.com/v1/latest"
-    #   base_currency: XAU
-    #   unit: gram
-    # fx:
-    #   base: CNY
-    #   currencies: ["USD", "JPY"]
-    #   labels: { USD: "美元", JPY: "日元" }
