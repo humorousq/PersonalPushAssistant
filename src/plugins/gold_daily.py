@@ -210,8 +210,9 @@ class GoldDailyBriefPlugin:
                     failed_quotes.append(q)
                     continue
                 item = raw_bankgold2.get(q.symbol) or {}
-                buy_str = _format_optional(item.get("buyprice"), price_precision)
-                sell_str = _format_optional(item.get("sellprice"), price_precision)
+                # 从用户视角：购买价=向银行买入时支付的价格（sellprice），出售价=卖给银行时得到的价格（buyprice）
+                buy_str = _format_optional(item.get("sellprice"), price_precision)
+                sell_str = _format_optional(item.get("buyprice"), price_precision)
                 prev_str = _format_optional(q.prev_close, price_precision)
                 open_str = _format_optional(q.open_today, price_precision)
                 unit = (item.get("unit") or "").strip() or "—"
@@ -237,7 +238,7 @@ class GoldDailyBriefPlugin:
                     f"<span style=\"font-size:14px;font-weight:600;\">{q.name}</span>"
                     f"<span style=\"font-size:16px;font-weight:600;\">{current_str} <span style=\"font-size:11px;color:#666;font-weight:400;\">{unit}</span></span>"
                     "</div>"
-                    f"<div style=\"font-size:12px;color:#666;margin-bottom:4px;\">买入 {buy_str} / 卖出 {sell_str} · 昨收 {prev_str} / 今开 {open_str}</div>"
+                    f"<div style=\"font-size:12px;color:#666;margin-bottom:4px;\">购买 {buy_str} / 出售 {sell_str} · 昨收 {prev_str} / 今开 {open_str}</div>"
                     f"<div style=\"font-size:12px;\">涨跌 {change_pct_str}（{change_abs_str}） <span style=\"color:#999;font-size:11px;\">{updatetime}</span></div>"
                     "</div>"
                 )
